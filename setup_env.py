@@ -46,13 +46,46 @@ def _derive_agent_control_url(console_url: str, explicit_url: str = "") -> str:
     return f"{console_url}/api/agent-control"
 
 
+_SECRETS_CACHE: Optional[dict] = None
+
+
+def _load_secrets() -> dict:
+    """Read .streamlit/secrets.toml once, tolerating a missing file."""
+    global _SECRETS_CACHE
+    if _SECRETS_CACHE is None:
+        _SECRETS_CACHE = {}
+        for candidate in (Path(".streamlit/secrets.toml"), Path("../.streamlit/secrets.toml")):
+            if candidate.exists():
+                try:
+                    _SECRETS_CACHE = toml.load(candidate)
+                except Exception as e:
+                    print(f"⚠️  Could not read {candidate}: {e}")
+                break
+    return _SECRETS_CACHE
+
+
+def get_project_override() -> str:
+    """
+    Galileo project that overrides every domain's configured project.
+
+    Set it with the GALILEO_PROJECT_OVERRIDE environment variable or the
+    `galileo_project` key in .streamlit/secrets.toml so a fork can send all
+    traces to a project the API key actually owns.
+    """
+    override = os.environ.get("GALILEO_PROJECT_OVERRIDE", "").strip()
+    if override:
+        return override
+    return str(_load_secrets().get("galileo_project", "")).strip()
+
+
 def get_domain_project_name(domain_name: str, domain_config: Optional[dict] = None) -> str:
     """
     Get the Galileo project name for a domain.
     
     Priority:
-    1. If domain_config has a 'galileo.project' field, use that (explicit)
-    2. Otherwise, use default: "galileo-demo-{domain_name}"
+    1. GALILEO_PROJECT_OVERRIDE / secrets `galileo_project`, if set
+    2. If domain_config has a 'galileo.project' field, use that (explicit)
+    3. Otherwise, use default: "galileo-demo-{domain_name}"
     
     Args:
         domain_name: Name of the domain (e.g., "finance")
@@ -61,6 +94,10 @@ def get_domain_project_name(domain_name: str, domain_config: Optional[dict] = No
     Returns:
         Project name for the domain
     """
+    override = get_project_override()
+    if override:
+        return override
+
     # Check if domain config explicitly specifies a project
     if domain_config and "galileo" in domain_config and "project" in domain_config["galileo"]:
         return domain_config["galileo"]["project"]

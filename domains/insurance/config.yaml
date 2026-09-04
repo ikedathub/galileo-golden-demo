@@ -3,7 +3,7 @@ domain:
   description: "insurance assistant for online help and customer account support"
 
 galileo:
-  project: "galileo-demo"
+  project: "taikeda-demo"
   log_stream: "insurance"
 
 # UI configuration

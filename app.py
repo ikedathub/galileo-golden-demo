@@ -820,6 +820,10 @@ def run_experiment_ui(
 
 def multi_domain_agent_app(domain_name: str):
     """Main agent app - configuration-driven using domain config"""
+    # Tells main() a page already started rendering, so a later failure does
+    # not trigger the fallback and draw the same widgets (and keys) twice.
+    st.session_state["page_started"] = True
+
     # Load domain configuration first (needed for environment setup)
     dm = DomainManager()
     full_config_key = f"full_domain_config_{domain_name}"
@@ -1183,6 +1187,7 @@ def main():
             st.stop()
         
         # Create navigation with list of pages - hide navigation for clean demo
+        st.session_state["page_started"] = False
         try:
             # uncomment this to show the navigation with different pages per domain
             nav = st.navigation(pages, position="hidden")
@@ -1191,8 +1196,9 @@ def main():
             st.error(f"Navigation error: {str(nav_error)}")
             st.info(f"Available domains: {available_domains}")
             st.info(f"Number of pages created: {len(pages)}")
-            # Fallback to default domain
-            if available_domains:
+            # Fallback to default domain, unless the failure happened inside a
+            # page that already rendered — replaying it would duplicate widgets.
+            if available_domains and not st.session_state.get("page_started"):
                 st.warning("Falling back to direct domain execution...")
                 multi_domain_agent_app(default_domain)
         

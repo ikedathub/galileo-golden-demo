@@ -26,7 +26,16 @@ RECOMMENDED = {
     "GALILEO_CONSOLE_URL": "galileo_console_url",
 }
 
+# The Splunk-branded console hands out SPLUNK_AO_* variable names, so accept
+# either spelling for the same secret.
+ALIASES = {
+    "GALILEO_API_KEY": "SPLUNK_AO_API_KEY",
+    "GALILEO_CONSOLE_URL": "SPLUNK_AO_CONSOLE_URL",
+    "GALILEO_PROJECT": "SPLUNK_AO_PROJECT",
+}
+
 OPTIONAL = {
+    "GALILEO_PROJECT": "galileo_project",
     "GALILEO_API_URL": "galileo_api_url",
     "OPENAI_DEFAULT_CHAT_MODEL": "openai_default_chat_model",
     "OPENAI_EMBEDDING_MODEL": "openai_embedding_model",
@@ -50,7 +59,10 @@ def toml_escape(value: str) -> str:
 
 
 def env(name: str) -> str:
-    return os.environ.get(name, "").strip()
+    value = os.environ.get(name, "").strip()
+    if not value and name in ALIASES:
+        value = os.environ.get(ALIASES[name], "").strip()
+    return value
 
 
 def database_entries() -> dict:

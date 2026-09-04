@@ -70,6 +70,15 @@ class DomainManager:
         # Load config.yaml
         config_path = os.path.join(domain_path, "config.yaml")
         config = self._load_yaml(config_path)
+
+        # A deployment-wide project override wins over the per-domain value so
+        # every consumer of this config (chat, agents, hallucination demo)
+        # agrees on where traces are written.
+        from setup_env import get_project_override
+
+        project_override = get_project_override()
+        if project_override:
+            config.setdefault("galileo", {})["project"] = project_override
         
         # Load system_prompt.json
         system_prompt_path = os.path.join(domain_path, "system_prompt.json")

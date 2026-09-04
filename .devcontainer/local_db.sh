@@ -42,8 +42,11 @@ elif [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER")" != "true" ]; the
   docker start "$CONTAINER" >/dev/null
 fi
 
+# pg_isready answers from the temporary server the image runs while
+# initialising, before the database exists, so query the database itself.
 for _ in $(seq 1 60); do
-  if docker exec "$CONTAINER" pg_isready -U postgres -d vectordb >/dev/null 2>&1; then
+  if docker exec "$CONTAINER" psql -U postgres -d vectordb -c 'SELECT 1' \
+      >/dev/null 2>&1; then
     break
   fi
   sleep 2
