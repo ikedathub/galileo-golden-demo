@@ -3,6 +3,7 @@ Shared PostgreSQL/pgvector utilities for vector storage and retrieval.
 """
 import os
 from typing import Optional, Tuple
+from urllib.parse import quote
 
 from langchain_core.embeddings import Embeddings
 from langchain_postgres import PGVector
@@ -35,7 +36,17 @@ def get_postgres_connection_string() -> str:
     user = os.environ.get("POSTGRES_USER", "postgres")
     password = os.environ.get("POSTGRES_PASSWORD", "")
     database = os.environ.get("POSTGRES_DB", "vectordb")
-    return f"postgresql+psycopg://{user}:{password}@{host}:{port}/{database}"
+    # Remote databases (Supabase, Neon, RDS) must not silently fall back to a
+    # plaintext connection, which psycopg's default sslmode=prefer allows.
+    sslmode = os.environ.get("POSTGRES_SSLMODE", "").strip()
+    if not sslmode:
+        sslmode = "prefer" if host in ("localhost", "127.0.0.1", "::1") else "require"
+    # Managed providers generate passwords containing URL-reserved characters.
+    credentials = f"{quote(user, safe='')}:{quote(password, safe='')}"
+    return (
+        f"postgresql+psycopg://{credentials}@{host}:{port}/{database}"
+        f"?sslmode={sslmode}"
+    )
 
 
 def get_collection_name(domain_name: str, provider: Optional[str] = None) -> str:

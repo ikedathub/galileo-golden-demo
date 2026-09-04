@@ -151,6 +151,7 @@ def setup_environment(domain_name: Optional[str] = None, domain_config: Optional
             "POSTGRES_USER": secrets.get("postgres_user", "postgres"),
             "POSTGRES_PASSWORD": secrets.get("postgres_password", ""),
             "POSTGRES_DB": secrets.get("postgres_db", "vectordb"),
+            "POSTGRES_SSLMODE": secrets.get("postgres_sslmode", ""),
             "ENVIRONMENT": secrets.get("environment", "local")
         }
         
