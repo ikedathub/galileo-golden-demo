@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
-# One-time provisioning: OS packages for `unstructured`, then Python deps.
-set -euo pipefail
+# One-time provisioning: Python dependencies.
+#
+# Deliberately exits 0 even on failure. A non-zero exit here aborts container
+# creation and drops the Codespace into recovery mode, which hides the actual
+# error; leaving the container up lets the install be retried and inspected.
+set -uo pipefail
 
-sudo apt-get update
-sudo apt-get install -y --no-install-recommends libmagic1
-sudo rm -rf /var/lib/apt/lists/*
+python3 -m pip install --upgrade pip || echo "⚠️  pip upgrade failed"
 
-python3 -m pip install --upgrade pip
-python3 -m pip install -r requirements.txt
+if python3 -m pip install -r requirements.txt; then
+  echo "✓ dependencies installed"
+else
+  echo "⚠️  dependency install failed — retry with:"
+  echo "    python3 -m pip install -r requirements.txt"
+fi
 
-echo "✓ dependencies installed"
+exit 0

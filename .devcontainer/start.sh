@@ -17,3 +17,5 @@ Other domains (healthcare / insurance / restaurant) need their index built once:
     python helpers/setup_vectordb.py healthcare
 
 EOF
+
+exit 0
